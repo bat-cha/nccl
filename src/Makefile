@@ -61,7 +61,7 @@ nccl.h : nccl.h.in
 $(LIBDIR)/$(LIBTARGET): $(LIBOBJ) devicelib
 	@printf "Linking    %-35s > %s\n" $(LIBTARGET) $@
 	mkdir -p $(LIBDIR)
-	$(CXX) $(CXXFLAGS) -shared -Wl,--no-as-needed -Wl,-soname,$(LIBSONAME) -o $@ $(LIBOBJ) $(DEVICELIB) $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) -shared $(LINK_SHARED_STRING) -o $@ $(LIBOBJ) $(DEVICELIB) $(LDFLAGS)
 	ln -sf $(LIBSONAME) $(LIBDIR)/$(LIBNAME)
 	ln -sf $(LIBTARGET) $(LIBDIR)/$(LIBSONAME)
 

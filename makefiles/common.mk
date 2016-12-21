@@ -15,8 +15,18 @@ PROFAPI ?= 0
 NVCC = $(CUDA_HOME)/bin/nvcc
 
 CUDA_LIB ?= $(CUDA_HOME)/lib64
+
+UNAME := $(shell uname)
+ifeq ($(UNAME), Darwin)
+	CUDA_LIB = $(CUDA_HOME)/lib
+endif
+
+
 CUDA_INC ?= $(CUDA_HOME)/include
 CUDA_VERSION = $(strip $(shell $(NVCC) --version | grep release | sed 's/.*release //' | sed 's/\,.*//'))
+ifeq ($(UNAME), Darwin)
+CUDA_VERSION = $(shell $(NVCC) --version | tail -1 | sed "s/.*, V//")
+endif
 #CUDA_VERSION ?= $(shell ls $(CUDA_LIB)/libcudart.so.* | head -1 | rev | cut -d "." -f -2 | rev)
 CUDA_MAJOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 1)
 CUDA_MINOR = $(shell echo $(CUDA_VERSION) | cut -d "." -f 2)
@@ -47,7 +57,18 @@ CXXFLAGS   := -I$(CUDA_INC) -DCUDA_MAJOR=$(CUDA_MAJOR) -DCUDA_MINOR=$(CUDA_MINOR
 CXXFLAGS   += -Wall -Wno-sign-compare
 NVCUFLAGS  := -ccbin $(CXX) $(NVCC_GENCODE) -lineinfo -std=c++11 -Xptxas -maxrregcount=96 -Xfatbin -compress-all
 # Use addprefix so that we can specify more than one path
-NVLDFLAGS  := -L${CUDA_LIB} -lcudart -lrt
+NVLDFLAGS  := -L${CUDA_LIB} -lcudart
+
+ifeq ($(UNAME), Linux)
+	NVLDFLAGS += -lrt
+endif
+
+CXX_IS_CLANG = $(shell $(CXX) --version | grep "clang" | wc -l)
+ifneq ($(strip $(CXX_IS_CLANG)), 0)
+	LINK_SHARED_STRING = 
+else
+	LINK_SHARED_STRING = -Wl,--no-as-needed -Wl,-soname,$(LIBSONAME)
+endif
 
 ########## GCOV ##########
 GCOV ?= 0 # disable by default.
