@@ -15,7 +15,7 @@ LIBSRCFILES := init.cu ring.cu bootstrap.cu transport.cu misc/group.cu \
                 collectives/all_reduce.cu collectives/all_gather.cu collectives/broadcast.cu collectives/reduce.cu collectives/reduce_scatter.cu
 
 ##### lib files
-LIBNAME     := libnccl.so
+LIBNAME     := libnccl.dylib
 STATICLIBNAME := libnccl_static.a
 ##### dirs
 BUILDDIR ?= $(abspath ../build)
@@ -29,13 +29,26 @@ LIBTARGET  := $(LIBNAME:%=%.$(NCCL_MAJOR).$(NCCL_MINOR).$(NCCL_PATCH))
 STATICLIBTARGET := $(STATICLIBNAME)
 LIBOBJ     := $(LIBSRCFILES:%.cu=$(OBJDIR)/%.o)
 DEPFILES   := $(LIBOBJ:%.o=%.d)
-LDFLAGS    += -L${CUDA_LIB} -lcudart_static -lrt
+LDFLAGS    += -L${CUDA_LIB} -lcudart_static 
+
+ifeq ($(UNAME), Linux)
+	LDFLAGS += -lrt
+endif
+
+
+CXX_IS_CLANG = $(shell $(CXX) --version | grep "clang" | wc -l)
+ifneq ($(strip $(CXX_IS_CLANG)), 0)
+	LINK_SHARED_STRING = -dynamiclib
+else
+	LINK_SHARED_STRING = -Wl,--no-as-needed -Wl,-soname,$(LIBSONAME)
+endif
 
 DEVICELIB  := $(BUILDDIR)/obj/collectives/device/colldevice.a
 
 
 ##### rules
 build : lib staticlib
+	echo ${LINK_SHARED_STRING}
 
 lib : $(INCTARGETS) $(LIBDIR)/$(LIBTARGET)
 
@@ -61,6 +74,7 @@ nccl.h : nccl.h.in
 $(LIBDIR)/$(LIBTARGET): $(LIBOBJ) devicelib
 	@printf "Linking    %-35s > %s\n" $(LIBTARGET) $@
 	mkdir -p $(LIBDIR)
+	echo  $(LINK_SHARED_STRING)
 	$(CXX) $(CXXFLAGS) -shared $(LINK_SHARED_STRING) -o $@ $(LIBOBJ) $(DEVICELIB) $(LDFLAGS)
 	ln -sf $(LIBSONAME) $(LIBDIR)/$(LIBNAME)
 	ln -sf $(LIBTARGET) $(LIBDIR)/$(LIBSONAME)

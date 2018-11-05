@@ -63,13 +63,6 @@ ifeq ($(UNAME), Linux)
 	NVLDFLAGS += -lrt
 endif
 
-CXX_IS_CLANG = $(shell $(CXX) --version | grep "clang" | wc -l)
-ifneq ($(strip $(CXX_IS_CLANG)), 0)
-	LINK_SHARED_STRING = 
-else
-	LINK_SHARED_STRING = -Wl,--no-as-needed -Wl,-soname,$(LIBSONAME)
-endif
-
 ########## GCOV ##########
 GCOV ?= 0 # disable by default.
 GCOV_FLAGS := $(if $(filter 0,${GCOV} ${DEBUG}),,--coverage) # only gcov=1 and debug =1

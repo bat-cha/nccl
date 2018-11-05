@@ -8,6 +8,13 @@
 #include "debug.h"
 #include "enqueue.h"
 
+#ifdef __APPLE__
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#include <mach/thread_act.h>
+#define pthread_tryjoin_np(THR, RETVAL)  pthread_detach((THR))
+#endif
+
 #define MAX_ASYNC_OPS 128
 thread_local pthread_t ncclGroupThreads[MAX_ASYNC_OPS];
 thread_local int ncclGroupIndex = 0;

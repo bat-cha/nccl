@@ -12,6 +12,30 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+static int posix_fallocate(int fd, off_t offset, off_t len)
+{
+    off_t c_test;
+    int ret;
+    if (!__builtin_saddll_overflow(offset, len, &c_test)) {
+        fstore_t store = {F_ALLOCATECONTIG, F_PEOFPOSMODE, 0, offset + len};
+        // Try to get a continous chunk of disk space
+        fcntl(fd, F_PREALLOCATE, &store);
+        if (ret < 0) {
+            // OK, perhaps we are too fragmented, allocate non-continuous
+            store.fst_flags = F_ALLOCATEALL;
+            ret = fcntl(fd, F_PREALLOCATE, &store);
+            if (ret < 0) {
+                return ret;
+            }
+        }
+        ret = ftruncate(fd, offset + len);
+    } else {
+        // offset+len would overflow.
+        ret = -1;
+    }
+    return ret;
+}
+
 static ncclResult_t shmOpen(const char* shmname, const int shmsize, void** shmPtr, void** devShmPtr, int create) {
   *shmPtr = NULL;
   int fd = shm_open(shmname, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);

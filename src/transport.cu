@@ -7,6 +7,7 @@
 #include "core.h"
 #include "common_coll.h"
 
+
 extern struct ncclTransport p2pTransport;
 extern struct ncclTransport shmTransport;
 extern struct ncclTransport netTransport;
@@ -129,7 +130,8 @@ ncclResult_t transportStartProxies(ncclComm* comm) {
     FifoPushArgs(comm->rings[r].send.proxyInfo);
     FifoPushArgs(comm->rings[r].recv.proxyInfo);
   }
-  pthread_yield(); // Let other threads run
+  //pthread_yield(); // Let other threads run
+  sched_yield();
   return ncclSuccess;
 }
 
